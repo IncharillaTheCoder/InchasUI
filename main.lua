@@ -2,14 +2,16 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-local aimbotEnabled = false
-local aimbotKey = Enum.KeyCode.Q
+local aimbotEnabled: boolean = false
+local aimbotKey: Enum.KeyCode = Enum.KeyCode.Q
 
 -- Toggle aimbot with Q key
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
     if gameProcessed then return end
     
     if input.KeyCode == aimbotKey then
@@ -19,12 +21,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- Find closest player to crosshair
-local function getClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    local currentCamera = workspace.CurrentCamera
+local function getClosestPlayer(): Player?
+    local closestPlayer: Player? = nil
+    local shortestDistance: number = math.huge
+    local currentCamera = Workspace.CurrentCamera
     
-    for _, player in pairs(Players:GetPlayers()) do
+    if not currentCamera then return nil end
+    
+    for _, player in Players:GetPlayers() do
         if player ~= LocalPlayer and player.Character then
             local character = player.Character
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -60,8 +64,10 @@ RunService.RenderStepped:Connect(function()
             local head = character:FindFirstChild("Head")
             
             if head then
-                local currentCamera = workspace.CurrentCamera
-                currentCamera.CFrame = CFrame.lookAt(currentCamera.CFrame.Position, head.Position)
+                local currentCamera = Workspace.CurrentCamera
+                if currentCamera then
+                    currentCamera.CFrame = CFrame.lookAt(currentCamera.CFrame.Position, head.Position)
+                end
             end
         end
     end
