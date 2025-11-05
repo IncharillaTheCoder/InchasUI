@@ -1,11 +1,31 @@
--- Enhanced Movement Script
+loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Main = Fluent:CreateWindow({
+    Title = "Flight Control",
+    SubTitle = "Enhanced Movement System",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark"
+})
+
+local Tabs = {
+    Flight = Main:AddTab({ Title = "Flight", Icon = "wind" }),
+    Settings = Main:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+-- Flight System Variables
 local Player = game:GetService("Players").LocalPlayer
 local Character = Player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 local FlySpeed = 50
-local Noclip = false
 local Flying = false
+local BodyGyro, BodyVelocity
 
 local Controls = {
     Forward = false,
@@ -16,62 +36,62 @@ local Controls = {
     Down = false
 }
 
--- Noclip function
-local function NoclipLoop()
-    if Character then
-        for _, v in pairs(Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide == true then
-                v.CanCollide = false
-            end
-        end
-    end
-end
-
 -- Fly function
 local function Fly()
-    local BodyGyro = Instance.new("BodyGyro")
-    local BodyVelocity = Instance.new("BodyVelocity")
-    
-    BodyGyro.Parent = HumanoidRootPart
-    BodyVelocity.Parent = HumanoidRootPart
-    
-    BodyGyro.P = 9e4
-    BodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    BodyGyro.cframe = HumanoidRootPart.CFrame
-    
-    BodyVelocity.velocity = Vector3.new(0, 0, 0)
-    BodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    
-    Flying = true
-    
-    spawn(function()
-        repeat wait()
-            if not Flying then break end
-            
-            if Controls.Left then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(-FlySpeed, 0, 0))
-            elseif Controls.Right then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(FlySpeed, 0, 0))
-            end
-            
-            if Controls.Forward then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(0, 0, -FlySpeed))
-            elseif Controls.Backward then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(0, 0, FlySpeed))
-            end
-            
-            if Controls.Up then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(0, FlySpeed, 0))
-            elseif Controls.Down then
-                BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(Vector3.new(0, -FlySpeed, 0))
-            end
-            
-            BodyGyro.cframe = Workspace.CurrentCamera.CoordinateFrame
-        until not Flying
+    if Flying then
+        BodyGyro = Instance.new("BodyGyro")
+        BodyVelocity = Instance.new("BodyVelocity")
         
-        BodyGyro:Destroy()
-        BodyVelocity:Destroy()
-    end)
+        BodyGyro.Parent = HumanoidRootPart
+        BodyVelocity.Parent = HumanoidRootPart
+        
+        BodyGyro.P = 9e4
+        BodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        BodyGyro.cframe = HumanoidRootPart.CFrame
+        
+        BodyVelocity.velocity = Vector3.new(0, 0, 0)
+        BodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        spawn(function()
+            while Flying do
+                wait()
+                
+                local moveDirection = Vector3.new(0, 0, 0)
+                
+                if Controls.Left then
+                    moveDirection = moveDirection + Vector3.new(-FlySpeed, 0, 0)
+                elseif Controls.Right then
+                    moveDirection = moveDirection + Vector3.new(FlySpeed, 0, 0)
+                end
+                
+                if Controls.Forward then
+                    moveDirection = moveDirection + Vector3.new(0, 0, -FlySpeed)
+                elseif Controls.Backward then
+                    moveDirection = moveDirection + Vector3.new(0, 0, FlySpeed)
+                end
+                
+                if Controls.Up then
+                    moveDirection = moveDirection + Vector3.new(0, FlySpeed, 0)
+                elseif Controls.Down then
+                    moveDirection = moveDirection + Vector3.new(0, -FlySpeed, 0)
+                end
+                
+                if moveDirection.Magnitude > 0 then
+                    BodyVelocity.velocity = BodyGyro.cframe:VectorToWorldSpace(moveDirection)
+                else
+                    BodyVelocity.velocity = Vector3.new(0, 0, 0)
+                end
+                
+                BodyGyro.cframe = Workspace.CurrentCamera.CoordinateFrame
+            end
+            
+            if BodyGyro then BodyGyro:Destroy() end
+            if BodyVelocity then BodyVelocity:Destroy() end
+        end)
+    else
+        if BodyGyro then BodyGyro:Destroy() end
+        if BodyVelocity then BodyVelocity:Destroy() end
+    end
 end
 
 -- Input handling
@@ -80,22 +100,7 @@ local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     
-    if input.KeyCode == Enum.KeyCode.F then
-        Flying = not Flying
-        if Flying then
-            Fly()
-        end
-    elseif input.KeyCode == Enum.KeyCode.N then
-        Noclip = not Noclip
-        if Noclip then
-            spawn(function()
-                while Noclip do
-                    NoclipLoop()
-                    wait(0.1)
-                end
-            end)
-        end
-    elseif input.KeyCode == Enum.KeyCode.W then
+    if input.KeyCode == Enum.KeyCode.W then
         Controls.Forward = true
     elseif input.KeyCode == Enum.KeyCode.S then
         Controls.Backward = true
@@ -126,19 +131,122 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
--- Noclip loop
-spawn(function()
-    while true do
-        if Noclip then
-            NoclipLoop()
-        end
-        wait(0.1)
+-- GUI Elements
+Tabs.Flight:AddParagraph({
+    Title = "Flight Control System",
+    Content = "Toggle flight mode and adjust flight speed using the controls below."
+})
+
+local FlightToggle = Tabs.Flight:AddToggle("FlightToggle", {
+    Title = "Flight Mode",
+    Default = false
+})
+
+FlightToggle:OnChanged(function(value)
+    Flying = value
+    if Flying then
+        Main:Notify({
+            Title = "Flight System",
+            Content = "Flight mode activated!",
+            Duration = 2
+        })
+        Fly()
+    else
+        Main:Notify({
+            Title = "Flight System",
+            Content = "Flight mode deactivated!",
+            Duration = 2
+        })
+        if BodyGyro then BodyGyro:Destroy() end
+        if BodyVelocity then BodyVelocity:Destroy() end
     end
+    print("Flight Mode:", Flying)
 end)
 
-print("Movement controls loaded!")
-print("F - Toggle Fly")
-print("N - Toggle Noclip")
-print("WASD - Move")
-print("Space - Ascend")
-print("Shift - Descend")
+local SpeedSlider = Tabs.Flight:AddSlider("SpeedSlider", {
+    Title = "Flight Speed",
+    Description = "Adjust how fast you fly",
+    Default = 50,
+    Min = 10,
+    Max = 200,
+    Rounding = 1,
+    Callback = function(value)
+        FlySpeed = value
+        print("Flight Speed:", value)
+    end
+})
+
+Tabs.Flight:AddButton({
+    Title = "Reset Character",
+    Callback = function()
+        Character:BreakJoints()
+        Main:Notify({
+            Title = "Flight System",
+            Content = "Character reset!",
+            Duration = 2
+        })
+    end
+})
+
+Tabs.Flight:AddParagraph({
+    Title = "Controls",
+    Content = "WASD - Move\nSpace - Ascend\nShift - Descend"
+})
+
+-- Settings Tab
+local InterfaceSection = Tabs.Settings:AddSection("Interface")
+
+InterfaceSection:AddDropdown("InterfaceTheme", {
+    Title = "Theme",
+    Description = "Switches Fluent theme.",
+    Values = Fluent.Themes,
+    Default = Fluent.Theme,
+    Callback = function(v)
+        Fluent:SetTheme(v)
+        Main:Notify({ Title = "Theme", Content = "Switched to " .. v, Duration = 2 })
+    end
+})
+
+if Fluent.UseAcrylic then
+    InterfaceSection:AddToggle("AcrylicToggle", {
+        Title = "Acrylic Blur",
+        Default = Fluent.Acrylic,
+        Callback = function(v)
+            Fluent:ToggleAcrylic(v)
+        end
+    })
+end
+
+InterfaceSection:AddToggle("TransparentToggle", {
+    Title = "Transparency",
+    Default = Fluent.Transparency,
+    Callback = function(v)
+        Fluent:ToggleTransparency(v)
+    end
+})
+
+InterfaceSection:AddKeybind("MenuKeybind", {
+    Title = "Minimize UI",
+    Default = "RightShift"
+})
+Main.MinimizeKeybind = Main.Options.MenuKeybind
+
+-- Save Manager
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+SaveManager:LoadAutoloadConfig()
+
+Main:Notify({
+    Title = "Flight Control",
+    Content = "Flight system loaded successfully!",
+    Duration = 4
+})
+
+print("Flight Control GUI Loaded!")
