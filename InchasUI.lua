@@ -197,7 +197,7 @@ function UI.newWindow(titleText, subtitleText, config)
 
     RunService.RenderStepped:Connect(function(dt)
         if config.smoothDragging then
-            local lerpFactor = 1 - math.pow(0.0001, dt) -- Adjustable smoothness
+            local lerpFactor = 1 - math.pow(0.0001, dt)
             frame.Position = frame.Position:Lerp(targetPos, lerpFactor)
             config.position = frame.Position
         end
@@ -253,45 +253,6 @@ function UI.newWindow(titleText, subtitleText, config)
         end)
     end
 
-    local function setupHover(btn, str, baseC, hoverC, baseS, hoverS)
-        btn.MouseEnter:Connect(function()
-            if not config.animationsEnabled then 
-                btn.BackgroundColor3 = hoverC
-                if str then str.Color = hoverS end
-                return 
-            end
-            TweenService:Create(btn, TweenInfo.new(0.2), {
-                BackgroundColor3 = hoverC,
-                BackgroundTransparency = 0
-            }):Play()
-            if str then
-                TweenService:Create(str, TweenInfo.new(0.2), {
-                    Color = hoverS
-                }):Play()
-            end
-        end)
-
-        btn.MouseLeave:Connect(function()
-            if not config.animationsEnabled then 
-                btn.BackgroundColor3 = baseC
-                if str then str.Color = baseS end
-                return 
-            end
-            TweenService:Create(btn, TweenInfo.new(0.2), {
-                BackgroundColor3 = baseC,
-                BackgroundTransparency = 0.2
-            }):Play()
-            if str then
-                TweenService:Create(str, TweenInfo.new(0.2), {
-                    Color = baseS
-                }):Play()
-            end
-        end)
-    end
-
-    setupHover(mBtn, mStr, Color3.fromRGB(80, 80, 120), Color3.fromRGB(100, 100, 160), Color3.fromRGB(120, 120, 180), Color3.fromRGB(150, 150, 220))
-    setupHover(cBtn, cStr, Color3.fromRGB(255, 70, 70), Color3.fromRGB(255, 100, 100), Color3.fromRGB(255, 120, 120), Color3.fromRGB(255, 150, 150))
-
     return {
         gui = gui,
         frame = frame,
@@ -300,12 +261,59 @@ function UI.newWindow(titleText, subtitleText, config)
         mBtn = mBtn,
         cBtn = cBtn,
         theme = theme,
+        config = config,
         notify = UI.notify
     }
 end
 
+local function applyModuleSettings(module, tab, config)
+    local settingsFrame = Instance.new("Frame", tab)
+    settingsFrame.Size = UDim2.new(1, -10, 0, 0)
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
+    settingsFrame.BackgroundTransparency = 0.5
+    settingsFrame.BorderSizePixel = 0
+    settingsFrame.ClipsDescendants = true
+    settingsFrame.Visible = false
+    Instance.new("UICorner", settingsFrame).CornerRadius = UDim.new(0, 8)
+    
+    local sl = Instance.new("UIListLayout", settingsFrame)
+    sl.Padding = UDim.new(0, 5)
+    sl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    
+    local isExpanded = false
+    module.MouseButton2Click:Connect(function()
+        isExpanded = not isExpanded
+        if not isExpanded then
+            if config.animationsEnabled then
+                TweenService:Create(settingsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -10, 0, 0)}):Play()
+                task.wait(0.3)
+                settingsFrame.Visible = false
+            else
+                settingsFrame.Size = UDim2.new(1, -10, 0, 0)
+                settingsFrame.Visible = false
+            end
+        else
+            settingsFrame.Visible = true
+            local targetHeight = sl.AbsoluteContentSize.Y + 10
+            if config.animationsEnabled then
+                TweenService:Create(settingsFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(1, -10, 0, targetHeight)}):Play()
+            else
+                settingsFrame.Size = UDim2.new(1, -10, 0, targetHeight)
+            end
+        end
+    end)
+    
+    sl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        if isExpanded then
+            settingsFrame.Size = UDim2.new(1, -10, 0, sl.AbsoluteContentSize.Y + 10)
+        end
+    end)
+    
+    return settingsFrame
+end
+
 function UI.addTab(window, name)
-    local config = window.config or {animationsEnabled = true}
+    local config = window.config
     local tabFrame = Instance.new("ScrollingFrame", window.cont)
     tabFrame.Size = UDim2.new(1, 0, 1, 0)
     tabFrame.Position = config.animationsEnabled and UDim2.new(0, 50, 0, 0) or UDim2.new(0, 0, 0, 0)
@@ -428,7 +436,8 @@ function UI.addButton(tab, text, theme, config)
         TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 45)}):Play()
     end)
 
-    return btn, lbl, stt
+    local settings = applyModuleSettings(btn, tab, cfg)
+    return {Instance = btn, Settings = settings}
 end
 
 function UI.addToggle(tab, text, theme, default, callback, config)
@@ -499,7 +508,9 @@ function UI.addToggle(tab, text, theme, default, callback, config)
     end)
 
     update()
-    return btn
+    
+    local settings = applyModuleSettings(btn, tab, cfg)
+    return {Instance = btn, Settings = settings}
 end
 
 function UI.addSlider(tab, text, theme, min, max, default, callback, config)
@@ -567,25 +578,6 @@ function UI.addSlider(tab, text, theme, min, max, default, callback, config)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
     UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move(i) end end)
 
-    container.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            if cfg.animationsEnabled then 
-                TweenService:Create(container, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 60)}):Play()
-            else
-                container.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-            end
-        end
-    end)
-    container.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            if cfg.animationsEnabled then 
-                TweenService:Create(container, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
-            else
-                container.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-            end
-        end
-    end)
-
     return container
 end
 
@@ -625,17 +617,8 @@ function UI.addKeybind(tab, name, config, callback, delCallback)
     del.MouseButton1Click:Connect(function() delCallback(name); refresh() end)
     btn.MouseButton1Click:Connect(function() btn.Text = name .. " : PRESS KEY..."; callback(name) end)
     
-    btn.MouseButton1Down:Connect(function()
-        if not cfg.animationsEnabled then return end
-        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
-    end)
-    btn.MouseButton1Up:Connect(function()
-        if not cfg.animationsEnabled then return end
-        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
-    end)
-
     refresh()
-    return btn, del, refresh
+    return btn
 end
 
 return UI
