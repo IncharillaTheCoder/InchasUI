@@ -1,6 +1,7 @@
 local UI = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
 UI.Themes = {
@@ -28,6 +29,8 @@ UI.Themes = {
 
 function UI.newWindow(titleText, subtitleText, config)
     local theme = UI.Themes[config.theme] or UI.Themes.default
+    if config.animationsEnabled == nil then config.animationsEnabled = true end
+    if config.smoothDragging == nil then config.smoothDragging = true end
 
     local gui = Instance.new("ScreenGui")
     gui.Name = "InchasLib"
@@ -36,10 +39,10 @@ function UI.newWindow(titleText, subtitleText, config)
     gui.Parent = (gethui and gethui()) or CoreGui
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromOffset(350, 420)
+    frame.Size = config.animationsEnabled and UDim2.fromOffset(0, 0) or UDim2.fromOffset(350, 420)
     frame.Position = config.position
     frame.BackgroundColor3 = theme.background
-    frame.BackgroundTransparency = config.transparency
+    frame.BackgroundTransparency = config.animationsEnabled and 1 or config.transparency
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.Parent = gui
@@ -49,13 +52,14 @@ function UI.newWindow(titleText, subtitleText, config)
     local stroke = Instance.new("UIStroke", frame)
     stroke.Color = Color3.fromRGB(100, 100, 150)
     stroke.Thickness = 2.5
-    stroke.Transparency = 0.15
+    stroke.Transparency = config.animationsEnabled and 1 or 0.15
 
     local titleBar = Instance.new("Frame", frame)
     titleBar.Size = UDim2.new(1, 0, 0, 48)
     titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
     titleBar.BorderSizePixel = 0
     titleBar.ZIndex = 2
+    titleBar.BackgroundTransparency = config.animationsEnabled and 1 or 0
     Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 16, 0, 0)
 
     local tg = Instance.new("UIGradient", titleBar)
@@ -72,6 +76,7 @@ function UI.newWindow(titleText, subtitleText, config)
     title.BackgroundTransparency = 1
     title.Text = titleText
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextTransparency = config.animationsEnabled and 1 or 0
     title.Font = Enum.Font.GothamBlack
     title.TextSize = 20
     title.TextXAlignment = Enum.TextXAlignment.Left
@@ -82,6 +87,7 @@ function UI.newWindow(titleText, subtitleText, config)
     subtitle.BackgroundTransparency = 1
     subtitle.Text = subtitleText
     subtitle.TextColor3 = Color3.fromRGB(180, 180, 220)
+    subtitle.TextTransparency = config.animationsEnabled and 1 or 0
     subtitle.Font = Enum.Font.GothamMedium
     subtitle.TextSize = 12
     subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -90,9 +96,10 @@ function UI.newWindow(titleText, subtitleText, config)
     mBtn.Size = UDim2.fromOffset(32, 32)
     mBtn.Position = UDim2.new(1, -80, 0.5, -16)
     mBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-    mBtn.BackgroundTransparency = 0.2
+    mBtn.BackgroundTransparency = config.animationsEnabled and 1 or 0.2
     mBtn.Text = "−"
     mBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mBtn.TextTransparency = config.animationsEnabled and 1 or 0
     mBtn.Font = Enum.Font.GothamBold
     mBtn.TextSize = 24
     Instance.new("UICorner", mBtn).CornerRadius = UDim.new(1, 0)
@@ -100,15 +107,16 @@ function UI.newWindow(titleText, subtitleText, config)
     local mStr = Instance.new("UIStroke", mBtn)
     mStr.Color = Color3.fromRGB(120, 120, 180)
     mStr.Thickness = 1.5
-    mStr.Transparency = 0.3
+    mStr.Transparency = config.animationsEnabled and 1 or 0.3
 
     local cBtn = Instance.new("TextButton", titleBar)
     cBtn.Size = UDim2.fromOffset(32, 32)
     cBtn.Position = UDim2.new(1, -40, 0.5, -16)
     cBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-    cBtn.BackgroundTransparency = 0.2
+    cBtn.BackgroundTransparency = config.animationsEnabled and 1 or 0.2
     cBtn.Text = "×"
     cBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    cBtn.TextTransparency = config.animationsEnabled and 1 or 0
     cBtn.Font = Enum.Font.GothamBold
     cBtn.TextSize = 22
     Instance.new("UICorner", cBtn).CornerRadius = UDim.new(1, 0)
@@ -116,12 +124,13 @@ function UI.newWindow(titleText, subtitleText, config)
     local cStr = Instance.new("UIStroke", cBtn)
     cStr.Color = Color3.fromRGB(255, 120, 120)
     cStr.Thickness = 1.5
-    cStr.Transparency = 0.3
+    cStr.Transparency = config.animationsEnabled and 1 or 0.3
 
     local tabC = Instance.new("Frame", frame)
     tabC.Size = UDim2.new(1, 0, 0, 40)
     tabC.Position = UDim2.new(0, 0, 0, 48)
     tabC.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    tabC.BackgroundTransparency = config.animationsEnabled and 1 or 0
     tabC.BorderSizePixel = 0
     tabC.ZIndex = 2
     local tl = Instance.new("UIListLayout", tabC)
@@ -133,9 +142,28 @@ function UI.newWindow(titleText, subtitleText, config)
     cont.BackgroundTransparency = 1
     cont.Parent = frame
 
+    if config.animationsEnabled then
+        TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.fromOffset(350, 420),
+            BackgroundTransparency = config.transparency
+        }):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.8), {Transparency = 0.15}):Play()
+        task.delay(0.2, function()
+            TweenService:Create(titleBar, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+            TweenService:Create(title, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+            TweenService:Create(subtitle, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+            TweenService:Create(tabC, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+            TweenService:Create(mBtn, TweenInfo.new(0.4), {BackgroundTransparency = 0.2, TextTransparency = 0}):Play()
+            TweenService:Create(cBtn, TweenInfo.new(0.4), {BackgroundTransparency = 0.2, TextTransparency = 0}):Play()
+            TweenService:Create(mStr, TweenInfo.new(0.4), {Transparency = 0.3}):Play()
+            TweenService:Create(cStr, TweenInfo.new(0.4), {Transparency = 0.3}):Play()
+        end)
+    end
+
     local dragging = false
     local dragStart = nil
     local sPos = nil
+    local targetPos = config.position
 
     titleBar.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -148,13 +176,16 @@ function UI.newWindow(titleText, subtitleText, config)
     UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             local d = i.Position - dragStart
-            frame.Position = UDim2.new(
+            targetPos = UDim2.new(
                 sPos.X.Scale,
                 sPos.X.Offset + d.X,
                 sPos.Y.Scale,
                 sPos.Y.Offset + d.Y
             )
-            config.position = frame.Position
+            if not config.smoothDragging then
+                frame.Position = targetPos
+                config.position = frame.Position
+            end
         end
     end)
 
@@ -164,9 +195,17 @@ function UI.newWindow(titleText, subtitleText, config)
         end
     end)
 
+    RunService.RenderStepped:Connect(function(dt)
+        if config.smoothDragging then
+            local lerpFactor = 1 - math.pow(0.0001, dt) -- Adjustable smoothness
+            frame.Position = frame.Position:Lerp(targetPos, lerpFactor)
+            config.position = frame.Position
+        end
+    end)
+
     local notifyCont = Instance.new("Frame", gui)
-    notifyCont.Size = UDim2.new(0, 200, 1, 0)
-    notifyCont.Position = UDim2.new(1, -210, 0, 0)
+    notifyCont.Size = UDim2.new(0, 220, 1, 0)
+    notifyCont.Position = UDim2.new(1, -230, 0, 0)
     notifyCont.BackgroundTransparency = 1
     local nl = Instance.new("UIListLayout", notifyCont)
     nl.Padding = UDim.new(0, 10)
@@ -175,7 +214,8 @@ function UI.newWindow(titleText, subtitleText, config)
 
     function UI.notify(text, duration)
         local n = Instance.new("Frame", notifyCont)
-        n.Size = UDim2.new(0, 0, 0, 40)
+        n.Size = config.animationsEnabled and UDim2.new(0, 0, 0, 40) or UDim2.new(1, 0, 0, 40)
+        n.Position = config.animationsEnabled and UDim2.new(1, 50, 0, 0) or UDim2.new(0, 0, 0, 0)
         n.BackgroundColor3 = theme.background
         n.BorderSizePixel = 0
         n.ClipsDescendants = true
@@ -194,13 +234,63 @@ function UI.newWindow(titleText, subtitleText, config)
         nt.TextSize = 14
         nt.TextXAlignment = Enum.TextXAlignment.Center
 
-        TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(1, 0, 0, 40)}):Play()
+        if config.animationsEnabled then
+            TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 0, 40),
+                Position = UDim2.new(0, 0, 0, 0)
+            }):Play()
+        end
+
         task.delay(duration or 3, function()
-            TweenService:Create(n, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(0, 0, 0, 40)}):Play()
-            task.wait(0.4)
+            if config.animationsEnabled then
+                TweenService:Create(n, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                    Size = UDim2.new(0, 0, 0, 40),
+                    Position = UDim2.new(1, 50, 0, 0)
+                }):Play()
+                task.wait(0.5)
+            end
             n:Destroy()
         end)
     end
+
+    local function setupHover(btn, str, baseC, hoverC, baseS, hoverS)
+        btn.MouseEnter:Connect(function()
+            if not config.animationsEnabled then 
+                btn.BackgroundColor3 = hoverC
+                if str then str.Color = hoverS end
+                return 
+            end
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundColor3 = hoverC,
+                BackgroundTransparency = 0
+            }):Play()
+            if str then
+                TweenService:Create(str, TweenInfo.new(0.2), {
+                    Color = hoverS
+                }):Play()
+            end
+        end)
+
+        btn.MouseLeave:Connect(function()
+            if not config.animationsEnabled then 
+                btn.BackgroundColor3 = baseC
+                if str then str.Color = baseS end
+                return 
+            end
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundColor3 = baseC,
+                BackgroundTransparency = 0.2
+            }):Play()
+            if str then
+                TweenService:Create(str, TweenInfo.new(0.2), {
+                    Color = baseS
+                }):Play()
+            end
+        end)
+    end
+
+    setupHover(mBtn, mStr, Color3.fromRGB(80, 80, 120), Color3.fromRGB(100, 100, 160), Color3.fromRGB(120, 120, 180), Color3.fromRGB(150, 150, 220))
+    setupHover(cBtn, cStr, Color3.fromRGB(255, 70, 70), Color3.fromRGB(255, 100, 100), Color3.fromRGB(255, 120, 120), Color3.fromRGB(255, 150, 150))
 
     return {
         gui = gui,
@@ -215,8 +305,10 @@ function UI.newWindow(titleText, subtitleText, config)
 end
 
 function UI.addTab(window, name)
+    local config = window.config or {animationsEnabled = true}
     local tabFrame = Instance.new("ScrollingFrame", window.cont)
     tabFrame.Size = UDim2.new(1, 0, 1, 0)
+    tabFrame.Position = config.animationsEnabled and UDim2.new(0, 50, 0, 0) or UDim2.new(0, 0, 0, 0)
     tabFrame.BackgroundTransparency = 1
     tabFrame.BorderSizePixel = 0
     tabFrame.Visible = false
@@ -245,12 +337,30 @@ function UI.addTab(window, name)
     btn.MouseButton1Click:Connect(function()
         for _, f in pairs(window.cont:GetChildren()) do
             if f:IsA("ScrollingFrame") then
-                f.Visible = (f == tabFrame)
+                if f == tabFrame then
+                    f.Visible = true
+                    if config.animationsEnabled then
+                        f.Position = UDim2.new(0, 50, 0, 0)
+                        TweenService:Create(f, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                            Position = UDim2.new(0, 0, 0, 0)
+                        }):Play()
+                    else
+                        f.Position = UDim2.new(0, 0, 0, 0)
+                    end
+                else
+                    f.Visible = false
+                end
             end
         end
         for _, b in pairs(window.tabC:GetChildren()) do
             if b:IsA("TextButton") then
-                b.BackgroundColor3 = (b == btn) and Color3.fromRGB(50, 50, 80) or Color3.fromRGB(40, 40, 60)
+                if config.animationsEnabled then
+                    TweenService:Create(b, TweenInfo.new(0.3), {
+                        BackgroundColor3 = (b == btn) and Color3.fromRGB(50, 50, 80) or Color3.fromRGB(40, 40, 60)
+                    }):Play()
+                else
+                    b.BackgroundColor3 = (b == btn) and Color3.fromRGB(50, 50, 80) or Color3.fromRGB(40, 40, 60)
+                end
             end
         end
     end)
@@ -258,7 +368,8 @@ function UI.addTab(window, name)
     return tabFrame, btn
 end
 
-function UI.addButton(tab, text, theme)
+function UI.addButton(tab, text, theme, config)
+    local cfg = config or {animationsEnabled = true}
     local btn = Instance.new("TextButton", tab)
     btn.Size = UDim2.new(1, -10, 0, 45)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
@@ -290,18 +401,38 @@ function UI.addButton(tab, text, theme)
     Instance.new("UICorner", stt).CornerRadius = UDim.new(1, 0)
 
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
-        TweenService:Create(str, TweenInfo.new(0.25), {Color = theme.accent, Transparency = 0.2}):Play()
+        if not cfg.animationsEnabled then 
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
+            if str then str.Color = theme.accent end
+            return 
+        end
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
+        TweenService:Create(str, TweenInfo.new(0.2), {Color = theme.accent, Transparency = 0.2}):Play()
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.25), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
-        TweenService:Create(str, TweenInfo.new(0.25), {Color = Color3.fromRGB(100, 100, 150), Transparency = 0.3}):Play()
+        if not cfg.animationsEnabled then 
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+            if str then str.Color = Color3.fromRGB(100, 100, 150) end
+            return 
+        end
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
+        TweenService:Create(str, TweenInfo.new(0.2), {Color = Color3.fromRGB(100, 100, 150), Transparency = 0.3}):Play()
+    end)
+
+    btn.MouseButton1Down:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -15, 0, 42)}):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 45)}):Play()
     end)
 
     return btn, lbl, stt
 end
 
-function UI.addToggle(tab, text, theme, default, callback)
+function UI.addToggle(tab, text, theme, default, callback, config)
+    local cfg = config or {animationsEnabled = true}
     local btn = Instance.new("TextButton", tab)
     btn.Size = UDim2.new(1, -10, 0, 45)
     btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
@@ -339,8 +470,17 @@ function UI.addToggle(tab, text, theme, default, callback)
 
     local enabled = default or false
     local function update()
-        TweenService:Create(switchBase, TweenInfo.new(0.2), {BackgroundColor3 = enabled and theme.accent or Color3.fromRGB(50, 50, 70)}):Play()
-        TweenService:Create(dot, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+        if not cfg.animationsEnabled then 
+            switchBase.BackgroundColor3 = enabled and theme.accent or Color3.fromRGB(50, 50, 70)
+            dot.Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+            return 
+        end
+        TweenService:Create(switchBase, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundColor3 = enabled and theme.accent or Color3.fromRGB(50, 50, 70)
+        }):Play()
+        TweenService:Create(dot, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = enabled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        }):Play()
     end
 
     btn.MouseButton1Click:Connect(function()
@@ -349,11 +489,21 @@ function UI.addToggle(tab, text, theme, default, callback)
         callback(enabled)
     end)
 
+    btn.MouseButton1Down:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -15, 0, 42)}):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 45)}):Play()
+    end)
+
     update()
     return btn
 end
 
-function UI.addSlider(tab, text, theme, min, max, default, callback)
+function UI.addSlider(tab, text, theme, min, max, default, callback, config)
+    local cfg = config or {animationsEnabled = true}
     local container = Instance.new("Frame", tab)
     container.Size = UDim2.new(1, -10, 0, 60)
     container.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
@@ -403,8 +553,13 @@ function UI.addSlider(tab, text, theme, min, max, default, callback)
         local pos = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
         local val = math.floor(min + (max - min) * pos)
         valLbl.Text = tostring(val)
-        fill.Size = UDim2.new(pos, 0, 1, 0)
-        knob.Position = UDim2.new(pos, -6, 0.5, -6)
+        if not cfg.animationsEnabled then 
+            fill.Size = UDim2.new(pos, 0, 1, 0)
+            knob.Position = UDim2.new(pos, -6, 0.5, -6)
+        else
+            TweenService:Create(fill, TweenInfo.new(0.1), {Size = UDim2.new(pos, 0, 1, 0)}):Play()
+            TweenService:Create(knob, TweenInfo.new(0.1), {Position = UDim2.new(pos, -6, 0.5, -6)}):Play()
+        end
         callback(val)
     end
 
@@ -412,10 +567,30 @@ function UI.addSlider(tab, text, theme, min, max, default, callback)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
     UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move(i) end end)
 
+    container.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            if cfg.animationsEnabled then 
+                TweenService:Create(container, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 60)}):Play()
+            else
+                container.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+            end
+        end
+    end)
+    container.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            if cfg.animationsEnabled then 
+                TweenService:Create(container, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
+            else
+                container.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+            end
+        end
+    end)
+
     return container
 end
 
 function UI.addKeybind(tab, name, config, callback, delCallback)
+    local cfg = config or {animationsEnabled = true}
     local row = Instance.new("Frame", tab)
     row.Size = UDim2.new(1, -10, 0, 36)
     row.BackgroundTransparency = 1
@@ -449,6 +624,16 @@ function UI.addKeybind(tab, name, config, callback, delCallback)
 
     del.MouseButton1Click:Connect(function() delCallback(name); refresh() end)
     btn.MouseButton1Click:Connect(function() btn.Text = name .. " : PRESS KEY..."; callback(name) end)
+    
+    btn.MouseButton1Down:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        if not cfg.animationsEnabled then return end
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
+    end)
+
     refresh()
     return btn, del, refresh
 end
