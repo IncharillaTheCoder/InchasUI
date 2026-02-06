@@ -50,6 +50,7 @@ function UI.newWindow(titleText, subtitleText, config)
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
 
     local stroke = Instance.new("UIStroke", frame)
+    stroke.Name = "MainStroke"
     stroke.Color = Color3.fromRGB(100, 100, 150)
     stroke.Thickness = 2.5
     stroke.Transparency = config.animationsEnabled and 1 or 0.15
