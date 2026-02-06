@@ -12,7 +12,7 @@ for i = 1, #alphabet do
 	map[alphabet:sub(i, i)] = i - 1
 end
 
-local function encode(input)
+local function encode64(input)
 	local out = {}
 	local i = 1
 
@@ -34,7 +34,7 @@ local function encode(input)
 	return table.concat(out)
 end
 
-local function decode(input)
+local function decode64(input)
 	local bits = {}
 	for i = 1, #input do
 		local c = input:sub(i, i)
@@ -61,6 +61,6 @@ local function decode(input)
 end
 
 return {
-	encode = encode,
-	decode = decode
+	encode64 = encode64,
+	decode64 = decode64
 }
